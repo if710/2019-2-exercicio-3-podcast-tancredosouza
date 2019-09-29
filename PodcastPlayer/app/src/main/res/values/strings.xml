@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">PodcastPlayer</string>
+    <string name="action_download">Baixar</string>>
+    <string name="download_link">
+        https://s3-us-west-1.amazonaws.com/podcasts.thepolyglotdeveloper.com/podcast.xml
+    </string>
+</resources>

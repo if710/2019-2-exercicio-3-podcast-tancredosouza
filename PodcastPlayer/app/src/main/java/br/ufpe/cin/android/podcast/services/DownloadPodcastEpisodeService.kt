@@ -1,15 +1,12 @@
 package br.ufpe.cin.android.podcast.services
 
 import android.app.IntentService
-import android.content.Context
 import android.content.Intent
-import android.os.Environment
+import android.net.Uri
 import android.os.Environment.DIRECTORY_DOWNLOADS
-import android.os.Environment.getExternalStoragePublicDirectory
 import android.util.Log
-import android.widget.Toast
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-
+import br.ufpe.cin.android.podcast.database.ItemFeedsDatabase
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -21,14 +18,23 @@ import java.net.URL
 class DownloadPodcastEpisodeService : IntentService("DownloadPodcastEpisodeService") {
     public override fun onHandleIntent(i: Intent?) {
         try {
-            //checar se tem permissao... Android 6.0+
+            val itemFeedKey: String = i?.data?.toString()!!
+
+            val itemFeedsDatabase = ItemFeedsDatabase.getDatabase(applicationContext)
+
+            val itemFeed = itemFeedsDatabase.itemFeedsDao().getItemFeed(itemFeedKey)
+
+            val downloadUri = Uri.parse(itemFeed.downloadLink)
+
             val root = getExternalFilesDir(DIRECTORY_DOWNLOADS)
             root?.mkdirs()
-            val output = File(root, i!!.data!!.lastPathSegment)
+
+            val output = File(root, downloadUri.lastPathSegment!!)
             if (output.exists()) {
                 output.delete()
             }
-            val url = URL(i.data!!.toString())
+            val url = URL(itemFeed.downloadLink)
+
             val c = url.openConnection() as HttpURLConnection
             val fos = FileOutputStream(output.path)
             val out = BufferedOutputStream(fos)
@@ -41,15 +47,17 @@ class DownloadPodcastEpisodeService : IntentService("DownloadPodcastEpisodeServi
                     len = `in`.read(buffer)
                 }
                 out.flush()
+
+                itemFeed.downloadPath = output.path
+
+                itemFeedsDatabase.itemFeedsDao().updateItemFeed(itemFeed)
+
+                LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(DOWNLOAD_COMPLETE))
             } finally {
                 fos.fd.sync()
                 out.close()
                 c.disconnect()
             }
-
-            LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(DOWNLOAD_COMPLETE))
-
-
         } catch (e2: IOException) {
             Log.e(javaClass.getName(), "Exception durante download", e2)
         }

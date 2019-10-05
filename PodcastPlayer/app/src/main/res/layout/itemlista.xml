@@ -16,22 +16,13 @@
             android:layout_weight="8"
             android:textSize="14sp" />
 
-        <Button
+        <ImageButton
             android:id="@+id/item_action"
-            android:layout_width="59dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="2"
             android:text="@string/action_download"
             android:textSize="12sp" />
-
-        <ImageView
-            android:id="@+id/item_play"
-            android:layout_width="5dp"
-            android:layout_height="41dp"
-            android:layout_weight="8"
-            app:srcCompat="@drawable/playicon"
-            android:clickable="true"
-            android:focusable="true"/>
 
     </LinearLayout>
 

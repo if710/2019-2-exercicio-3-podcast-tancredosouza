@@ -11,9 +11,14 @@ data class ItemFeed(
     val pubDate: String,
     val description: String,
     val downloadLink: String,
-    val imageLink: String) {
+    val imageLink: String,
+    var downloadPath: String? = null) {
 
     override fun toString(): String {
         return title
+    }
+
+    fun isDownloaded(): Boolean {
+        return this.downloadPath != null
     }
 }

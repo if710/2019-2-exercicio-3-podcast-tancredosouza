@@ -1,6 +1,8 @@
 package br.ufpe.cin.android.podcast
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -8,6 +10,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import br.ufpe.cin.android.podcast.adapters.ItemFeedsAdapter
 import br.ufpe.cin.android.podcast.database.ItemFeedsDatabase
+import br.ufpe.cin.android.podcast.services.DownloadPodcastEpisodeService
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.uiThread
@@ -83,7 +86,8 @@ class MainActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = ItemFeedsAdapter(itemFeeds!!, this@MainActivity)
             addItemDecoration(
-                DividerItemDecoration(this@MainActivity, LinearLayoutManager.VERTICAL))
+                DividerItemDecoration(this@MainActivity, LinearLayoutManager.VERTICAL)
+            )
         }
     }
 

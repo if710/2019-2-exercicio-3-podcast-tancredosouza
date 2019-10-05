@@ -1,13 +1,9 @@
 package br.ufpe.cin.android.podcast
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Environment
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import br.ufpe.cin.android.podcast.adapters.ItemFeedsAdapter
@@ -15,8 +11,6 @@ import br.ufpe.cin.android.podcast.database.ItemFeedsDatabase
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.uiThread
-import java.io.File
-import java.io.FileWriter
 import java.net.URL
 
 
@@ -30,36 +24,48 @@ class MainActivity : AppCompatActivity() {
         createPodcastView()
     }
 
-    fun createPodcastView() {
+    private fun createPodcastView() {
         doAsync {
             try {
-                val rssFeed = downloadXMLFile()
-                saveToDatabase(Parser.parse(rssFeed))
-            } catch(e: Exception) {
+                fetchXMLContent()
+            } catch (e: Exception) {
                 uiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Não foi possível baixar. Carregando última lista...",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    toastFetchingStoredContentMessage()
                 }
             }
 
-            itemFeeds = getFromDatabase()
+            getItemFeedsFromDatabase()
 
             uiThread {
-                setupRecyclerView()
+                createPodcastEpisodesRecyclerView()
             }
         }
     }
 
-    fun downloadXMLFile(): String {
-        val xmlDownloadLink = getString(R.string.download_link)
-
-        return URL(xmlDownloadLink).readText()
+    private fun fetchXMLContent() {
+        val rssFeed = downloadXMLContent()
+        storeContent(Parser.parse(rssFeed))
     }
 
-    fun saveToDatabase(itemFeeds: List<ItemFeed>?) {
+    private fun downloadXMLContent(): String {
+        val xmlDownloadLink = getString(R.string.download_link)
+        val xmlContent = URL(xmlDownloadLink).readText()
+
+        return xmlContent
+    }
+
+    private fun toastFetchingStoredContentMessage() {
+        val failedDownloadMessage =
+            "Não foi possível baixar. Carregando última lista..."
+
+        Toast.makeText(
+            this@MainActivity,
+            failedDownloadMessage,
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    private fun storeContent(itemFeeds: List<ItemFeed>?) {
         val database = ItemFeedsDatabase.getDatabase(this@MainActivity)
 
         itemFeeds!!.forEach {
@@ -67,17 +73,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun getFromDatabase(): List<ItemFeed> {
+    private fun getItemFeedsFromDatabase() {
         val database = ItemFeedsDatabase.getDatabase(this@MainActivity)
-
-        return database.itemFeedsDao().getAllItemFeeds()
+        itemFeeds = database.itemFeedsDao().getAllItemFeeds()
     }
 
-    fun setupRecyclerView() {
-        listRecyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
-        listRecyclerView.adapter = ItemFeedsAdapter(itemFeeds!!, this@MainActivity)
-        listRecyclerView.addItemDecoration(
-            DividerItemDecoration(this@MainActivity, LinearLayoutManager.VERTICAL))
+    private fun createPodcastEpisodesRecyclerView() {
+        listRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = ItemFeedsAdapter(itemFeeds!!, this@MainActivity)
+            addItemDecoration(
+                DividerItemDecoration(this@MainActivity, LinearLayoutManager.VERTICAL))
+        }
     }
 
     companion object {

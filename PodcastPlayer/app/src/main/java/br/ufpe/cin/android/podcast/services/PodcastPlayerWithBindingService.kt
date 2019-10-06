@@ -10,7 +10,6 @@ import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import br.ufpe.cin.android.podcast.ItemFeed
 import br.ufpe.cin.android.podcast.database.ItemFeedsDatabase
@@ -22,18 +21,100 @@ class PodcastPlayerWithBindingService : Service() {
 
     private val podcastBinder = PodcastBinder()
 
-    private var episodeCurrentlyPlaying: ItemFeed? = null
+    private var currentlyPlayingPodcastEpisode: ItemFeed? = null
 
     override fun onCreate() {
         super.onCreate()
 
         mediaPlayer = MediaPlayer()
-
         mediaPlayer?.isLooping = true
 
-        mediaPlayer?.seekTo(0)
-
         createForegroundNotification()
+    }
+
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        return START_STICKY
+    }
+
+    override fun onDestroy() {
+        mediaPlayer?.release()
+        super.onDestroy()
+    }
+
+    fun playOrPause (podcastEpisode: ItemFeed) {
+        if (podcastEpisode != currentlyPlayingPodcastEpisode) {
+            changeEpisodeTo(podcastEpisode)
+        }
+
+        playback()
+    }
+
+    private fun changeEpisodeTo(podcastEpisode: ItemFeed) {
+        if (currentlyPlayingPodcastEpisode != null) {
+            saveEpisodeCurrentPosition()
+        }
+
+        loadEpisodeToMediaPlayer(podcastEpisode)
+    }
+
+    private fun saveEpisodeCurrentPosition() {
+        currentlyPlayingPodcastEpisode!!.currentPosition =
+            mediaPlayer!!.currentPosition
+
+        updateEpisodeInDatabase(currentlyPlayingPodcastEpisode!!)
+    }
+
+    private fun loadEpisodeToMediaPlayer(podcastEpisode: ItemFeed) {
+        currentlyPlayingPodcastEpisode = podcastEpisode
+
+        mediaPlayer!!.reset()
+        val episodeFile = File(podcastEpisode.downloadPath!!)
+        mediaPlayer!!.setDataSource(applicationContext, Uri.fromFile(episodeFile))
+        mediaPlayer!!.prepare()
+        mediaPlayer!!.seekTo(podcastEpisode.currentPosition ?: 0)
+    }
+
+    private fun playback() {
+        if (!mediaPlayer!!.isPlaying) {
+            mediaPlayer!!.start()
+        } else {
+            saveEpisodeCurrentPosition()
+            mediaPlayer!!.pause()
+        }
+    }
+
+    inner class PodcastBinder : Binder() {
+        internal val service: PodcastPlayerWithBindingService
+            get() = this@PodcastPlayerWithBindingService
+    }
+
+    override fun onBind(intent: Intent): IBinder {
+        return podcastBinder
+    }
+
+    private fun createChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // Create the NotificationChannel
+            val mChannel =
+                NotificationChannel(
+                    "1",
+                    "Canal de Notificacoes",
+                    NotificationManager.IMPORTANCE_DEFAULT)
+
+            mChannel.description = "Descricao"
+
+            val notificationManager =
+                getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+            notificationManager.createNotificationChannel(mChannel)
+        }
+    }
+
+    private fun updateEpisodeInDatabase(itemFeed: ItemFeed) {
+        doAsync {
+            val itemFeedsDatabase = ItemFeedsDatabase.getDatabase(applicationContext)
+            itemFeedsDatabase.itemFeedsDao().updateItemFeed(itemFeed)
+        }
     }
 
     private fun createForegroundNotification() {
@@ -53,74 +134,6 @@ class PodcastPlayerWithBindingService : Service() {
             .setContentIntent(pendingIntent).build()
 
         startForeground(NOTIFICATION_ID, notification)
-    }
-
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        return Service.START_STICKY
-    }
-
-    override fun onDestroy() {
-        mediaPlayer?.release()
-        super.onDestroy()
-    }
-
-    fun playOrPause (podcastEpisode: ItemFeed) {
-        val episodeFile = File(podcastEpisode.downloadPath!!)
-        if (podcastEpisode != episodeCurrentlyPlaying) {
-            if (episodeCurrentlyPlaying != null) {
-                episodeCurrentlyPlaying!!.currentPosition = mediaPlayer!!.currentPosition
-
-                // update episode position
-                doAsync {
-                    val itemFeedsDatabase = ItemFeedsDatabase.getDatabase(applicationContext)
-                    itemFeedsDatabase.itemFeedsDao().updateItemFeed(episodeCurrentlyPlaying!!)
-                }
-            }
-
-            episodeCurrentlyPlaying = podcastEpisode
-
-            mediaPlayer!!.reset()
-            mediaPlayer!!.setDataSource(applicationContext, Uri.fromFile(episodeFile))
-            mediaPlayer!!.prepare()
-            println("posss " + podcastEpisode.currentPosition)
-
-            // pickup from the other episode left off
-            mediaPlayer!!.seekTo(podcastEpisode.currentPosition?: 0)
-            mediaPlayer!!.start()
-        } else {
-            if (!mediaPlayer!!.isPlaying) {
-                mediaPlayer!!.start()
-            } else {
-                mediaPlayer!!.pause()
-            }
-        }
-    }
-
-    inner class PodcastBinder : Binder() {
-        internal val service: PodcastPlayerWithBindingService
-            get() = this@PodcastPlayerWithBindingService
-    }
-
-    override fun onBind(intent: Intent): IBinder {
-        return podcastBinder
-    }
-
-    fun createChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Create the NotificationChannel
-            val mChannel =
-                NotificationChannel(
-                    "1",
-                    "Canal de Notificacoes",
-                    NotificationManager.IMPORTANCE_DEFAULT)
-
-            mChannel.description = "Descricao"
-
-            val notificationManager =
-                getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-            notificationManager.createNotificationChannel(mChannel)
-        }
     }
 
     companion object {

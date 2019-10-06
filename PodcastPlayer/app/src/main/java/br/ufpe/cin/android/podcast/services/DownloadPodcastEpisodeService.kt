@@ -52,7 +52,7 @@ class DownloadPodcastEpisodeService : IntentService("DownloadPodcastEpisodeServi
 
                 itemFeedsDatabase.itemFeedsDao().updateItemFeed(itemFeed)
 
-                LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(DOWNLOAD_COMPLETE))
+                LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(UPDATE_FEED_ACTION))
             } finally {
                 fos.fd.sync()
                 out.close()
@@ -65,6 +65,6 @@ class DownloadPodcastEpisodeService : IntentService("DownloadPodcastEpisodeServi
     }
 
     companion object {
-        val DOWNLOAD_COMPLETE = "br.ufpe.cin.if710.services.action.DOWNLOAD_COMPLETE"
+        val UPDATE_FEED_ACTION = "br.ufpe.cin.if710.services.action.UPDATE_FEED_ACTION"
     }
 }

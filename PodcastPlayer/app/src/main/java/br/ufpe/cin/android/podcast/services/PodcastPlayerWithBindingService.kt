@@ -49,7 +49,7 @@ class PodcastPlayerWithBindingService : Service() {
         currentlyPlayingPodcastEpisode = null
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(
-            DownloadPodcastEpisodeService.DOWNLOAD_COMPLETE
+            DownloadPodcastEpisodeService.UPDATE_FEED_ACTION
         ))
     }
 

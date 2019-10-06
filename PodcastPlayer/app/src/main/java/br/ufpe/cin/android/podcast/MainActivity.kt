@@ -1,18 +1,16 @@
 package br.ufpe.cin.android.podcast
 
-import android.Manifest
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import br.ufpe.cin.android.podcast.adapters.ItemFeedsAdapter
 import br.ufpe.cin.android.podcast.database.ItemFeedsDatabase
-import br.ufpe.cin.android.podcast.services.DownloadPodcastEpisodeService.Companion.DOWNLOAD_COMPLETE
+import br.ufpe.cin.android.podcast.services.DownloadPodcastEpisodeService.Companion.UPDATE_FEED_ACTION
 import br.ufpe.cin.android.podcast.services.PodcastPlayerWithBindingService
 import kotlinx.android.synthetic.main.activity_main.*
 import org.jetbrains.anko.defaultSharedPreferences
@@ -131,14 +129,14 @@ class MainActivity : AppCompatActivity() {
         val intentFilter: IntentFilter
             get() {
                 val intentFilter = IntentFilter()
-                intentFilter.addAction(DOWNLOAD_COMPLETE)
+                intentFilter.addAction(UPDATE_FEED_ACTION)
                 return intentFilter
             }
 
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
             Log.d ("MainActivityReceiver", action)
-            if (action == DOWNLOAD_COMPLETE) {
+            if (action == UPDATE_FEED_ACTION) {
                 createPodcastView()
             }
         }

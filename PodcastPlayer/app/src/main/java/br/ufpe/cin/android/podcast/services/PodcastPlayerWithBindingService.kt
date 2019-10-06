@@ -11,6 +11,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import br.ufpe.cin.android.podcast.ItemFeed
 import br.ufpe.cin.android.podcast.database.ItemFeedsDatabase
 import org.jetbrains.anko.doAsync
@@ -29,7 +30,27 @@ class PodcastPlayerWithBindingService : Service() {
         mediaPlayer = MediaPlayer()
         mediaPlayer?.isLooping = true
 
+        mediaPlayer?.setOnCompletionListener {
+            deleteEpisode()
+        }
+
         createForegroundNotification()
+    }
+
+    private fun deleteEpisode() {
+        val episodeFile = File(currentlyPlayingPodcastEpisode!!.downloadPath!!)
+
+        episodeFile.delete()
+
+        currentlyPlayingPodcastEpisode!!.downloadPath = null
+
+        updateEpisodeInDatabase(currentlyPlayingPodcastEpisode!!)
+
+        currentlyPlayingPodcastEpisode = null
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(
+            DownloadPodcastEpisodeService.DOWNLOAD_COMPLETE
+        ))
     }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {

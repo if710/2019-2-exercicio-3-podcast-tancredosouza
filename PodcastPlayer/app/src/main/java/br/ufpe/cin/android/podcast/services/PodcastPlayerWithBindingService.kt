@@ -4,19 +4,17 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Binder
 import android.os.Build
-import android.os.Environment
 import android.os.IBinder
 import android.util.Log
-import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.core.net.toUri
 import br.ufpe.cin.android.podcast.ItemFeed
+import br.ufpe.cin.android.podcast.database.ItemFeedsDatabase
+import org.jetbrains.anko.doAsync
 import java.io.File
 
 class PodcastPlayerWithBindingService : Service() {
@@ -24,12 +22,16 @@ class PodcastPlayerWithBindingService : Service() {
 
     private val podcastBinder = PodcastBinder()
 
+    private var episodeCurrentlyPlaying: ItemFeed? = null
+
     override fun onCreate() {
         super.onCreate()
 
         mediaPlayer = MediaPlayer()
 
-        mediaPlayer?.isLooping = false
+        mediaPlayer?.isLooping = true
+
+        mediaPlayer?.seekTo(0)
 
         createForegroundNotification()
     }
@@ -64,13 +66,33 @@ class PodcastPlayerWithBindingService : Service() {
 
     fun playOrPause (podcastEpisode: ItemFeed) {
         val episodeFile = File(podcastEpisode.downloadPath!!)
-        if (!mediaPlayer!!.isPlaying) {
-            Log.v("PLAY", "playing: $episodeFile")
+        if (podcastEpisode != episodeCurrentlyPlaying) {
+            if (episodeCurrentlyPlaying != null) {
+                episodeCurrentlyPlaying!!.currentPosition = mediaPlayer!!.currentPosition
+
+                // update episode position
+                doAsync {
+                    val itemFeedsDatabase = ItemFeedsDatabase.getDatabase(applicationContext)
+                    itemFeedsDatabase.itemFeedsDao().updateItemFeed(episodeCurrentlyPlaying!!)
+                }
+            }
+
+            episodeCurrentlyPlaying = podcastEpisode
+
+            mediaPlayer!!.reset()
             mediaPlayer!!.setDataSource(applicationContext, Uri.fromFile(episodeFile))
             mediaPlayer!!.prepare()
+            println("posss " + podcastEpisode.currentPosition)
+
+            // pickup from the other episode left off
+            mediaPlayer!!.seekTo(podcastEpisode.currentPosition?: 0)
             mediaPlayer!!.start()
         } else {
-            mediaPlayer!!.pause()
+            if (!mediaPlayer!!.isPlaying) {
+                mediaPlayer!!.start()
+            } else {
+                mediaPlayer!!.pause()
+            }
         }
     }
 

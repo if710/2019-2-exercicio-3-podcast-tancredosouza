@@ -12,7 +12,8 @@ data class ItemFeed(
     val description: String,
     val downloadLink: String,
     val imageLink: String,
-    var downloadPath: String? = null) {
+    var downloadPath: String? = null,
+    var currentPosition: Int? = null) {
 
     override fun toString(): String {
         return title

@@ -23,7 +23,6 @@ import java.net.URL
 
 class MainActivity : AppCompatActivity() {
     private var sharedPreferences: SharedPreferences? = null
-    private var podcastEpisodes: List<ItemFeed>? = null
 
     internal var podcastPlayerWithBindingService: PodcastPlayerWithBindingService? = null
     internal var isBound = false
@@ -65,21 +64,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun createPodcastView() {
         doAsync {
-            try {
-                getItemFeedsFromDatabase()
-
-                if (podcastEpisodes!!.isEmpty()) {
-                    fetchXMLContent()
-                }
-
-            } catch (e: Exception) {
-                uiThread {
-                    toastFetchingStoredContentMessage()
-                }
+            if (getItemFeedsFromDatabase().isEmpty()) {
+                fetchXMLContent()
             }
 
+            val items = getItemFeedsFromDatabase()
             uiThread {
-                createPodcastEpisodesRecyclerView()
+                createPodcastEpisodesRecyclerView(items)
             }
         }
     }
@@ -96,17 +87,6 @@ class MainActivity : AppCompatActivity() {
         return xmlContent
     }
 
-    private fun toastFetchingStoredContentMessage() {
-        val failedDownloadMessage =
-            "Não foi possível baixar. Carregando última lista..."
-
-        Toast.makeText(
-            this@MainActivity,
-            failedDownloadMessage,
-            Toast.LENGTH_LONG
-        ).show()
-    }
-
     private fun storeContent(itemFeeds: List<ItemFeed>?) {
         val database = ItemFeedsDatabase.getDatabase(this@MainActivity)
 
@@ -115,16 +95,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getItemFeedsFromDatabase() {
+    private fun getItemFeedsFromDatabase(): List<ItemFeed> {
         val database = ItemFeedsDatabase.getDatabase(this@MainActivity)
-        podcastEpisodes = database.itemFeedsDao().getAllItemFeeds()
+
+        return database.itemFeedsDao().getAllItemFeeds()
     }
 
-    private fun createPodcastEpisodesRecyclerView() {
+    private fun createPodcastEpisodesRecyclerView(items: List<ItemFeed>) {
         listRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = ItemFeedsAdapter(
-                podcastEpisodes!!,
+                items,
                 this@MainActivity,
                 podcastPlayerWithBindingService)
             addItemDecoration(

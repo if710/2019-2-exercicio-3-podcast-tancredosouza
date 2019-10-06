@@ -7,13 +7,16 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.Environment
 import android.os.IBinder
+import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
+import br.ufpe.cin.android.podcast.ItemFeed
 import java.io.File
 
 class PodcastPlayerWithBindingService : Service() {
@@ -25,7 +28,8 @@ class PodcastPlayerWithBindingService : Service() {
         super.onCreate()
 
         mediaPlayer = MediaPlayer()
-        mediaPlayer?.isLooping = true
+
+        mediaPlayer?.isLooping = false
 
         createForegroundNotification()
     }
@@ -58,11 +62,15 @@ class PodcastPlayerWithBindingService : Service() {
         super.onDestroy()
     }
 
-    fun playOrPause () {
+    fun playOrPause (podcastEpisode: ItemFeed) {
+        val episodeFile = File(podcastEpisode.downloadPath!!)
         if (!mediaPlayer!!.isPlaying) {
-            mediaPlayer?.start()
+            Log.v("PLAY", "playing: $episodeFile")
+            mediaPlayer!!.setDataSource(applicationContext, Uri.fromFile(episodeFile))
+            mediaPlayer!!.prepare()
+            mediaPlayer!!.start()
         } else {
-            mediaPlayer?.pause()
+            mediaPlayer!!.pause()
         }
     }
 

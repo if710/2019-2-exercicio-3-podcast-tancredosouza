@@ -33,27 +33,17 @@ class ItemFeedViewHolder (
 
     override fun onClick(v: View) {}
 
-    fun startEpisodeDetailActivity(context: Context) {
-        val intent = Intent(context, EpisodeDetailActivity::class.java)
-        intent.putExtra("item_title", podcastTitleView!!.text)
-        startActivity(context, intent, null)
-    }
-
     fun bind(itemFeed : ItemFeed, context: Context) {
         val playIcon = Icon.createWithResource(context, R.drawable.playicon)
         val downloadIcon = Icon.createWithResource(context, R.drawable.downloadicon)
 
         if (itemFeed.isDownloaded()) {
-            Log.v("Downloaded", "baixei")
             podcastImageButtonView!!.setImageIcon(playIcon)
 
             podcastImageButtonView!!.setOnClickListener {
-                startPlayingEpisode()
+                startPlayingEpisode(itemFeed)
             }
         } else {
-            Log.v("Downloaded", "noa baixei")
-            println(itemFeed.downloadPath)
-
             podcastImageButtonView!!.setImageIcon(downloadIcon)
 
             podcastImageButtonView!!.setOnClickListener {
@@ -69,6 +59,12 @@ class ItemFeedViewHolder (
         }
     }
 
+    private fun startEpisodeDetailActivity(context: Context) {
+        val intent = Intent(context, EpisodeDetailActivity::class.java)
+        intent.putExtra("item_title", podcastTitleView!!.text)
+        startActivity(context, intent, null)
+    }
+
     private fun startDownload(itemFeed: ItemFeed, applicationContext: Context) {
         val downloadPodcastEpisodeService =
             Intent(applicationContext, DownloadPodcastEpisodeService::class.java)
@@ -78,7 +74,7 @@ class ItemFeedViewHolder (
         applicationContext.startService(downloadPodcastEpisodeService)
     }
 
-    private fun startPlayingEpisode() {
-        podcastPlayerWithBindingService?.playOrPause()
+    private fun startPlayingEpisode(episode: ItemFeed) {
+        podcastPlayerWithBindingService?.playOrPause(episode)
     }
 }
